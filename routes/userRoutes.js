@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const User = mongoose.model('users');
 const cors = require('cors')
 const http = require("http");
+const { checkJwt } = require("../authz/check-jwt");
+
 
 const corsOptions = {
     origin: 'http://localhost:3000'
@@ -12,7 +14,7 @@ module.exports = (app) => {
     app.use(cors(corsOptions));
 
     // Return all pets that belong to a user
-    app.get(`/api/users/:username/pets`, async (req, res) => {
+    app.get(`/api/users/:username/pets`, checkJwt, async (req, res) => {
         const { username } = req.params;
         let sendObj = null;
 
@@ -24,7 +26,7 @@ module.exports = (app) => {
     });
 
     // Add a pet to the user
-    app.post(`/api/users/:username/pets`, async (req, res) => {
+    app.post(`/api/users/:username/pets`, checkJwt, async (req, res) => {
         const { username } = req.params;
 
         const user = await User.updateOne(
@@ -38,7 +40,7 @@ module.exports = (app) => {
         })
     })
 
-    app.put(`/api/users/:username/pets/:id`, async (req, res) => {
+    app.put(`/api/users/:username/pets/:id`, checkJwt, async (req, res) => {
         const { username, id } = req.params;
 
         const user = await User.updateOne(
@@ -52,7 +54,7 @@ module.exports = (app) => {
 
     });
 
-    app.delete(`/api/users/:username/pets/:id`, async (req, res) => {
+    app.delete(`/api/users/:username/pets/:id`, checkJwt, async (req, res) => {
         const { username, id } = req.params;
 
         const user = await User.updateOne(
