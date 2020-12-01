@@ -10,7 +10,8 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const corsOptions = {
-    origin: 'http://localhost:3000'
+    origin: 'http://localhost:3000',
+    allowedHeaders: 'Authorization, Content-Type'
 }
 
 const s3 = new aws.S3({
@@ -60,7 +61,8 @@ module.exports = (app) => {
                                 name: req.body.name,
                                 birthdate: req.body.birthdate,
                                 description: req.body.description,
-                                imgFile: data.Location
+                                imgFile: data.Location,
+                                imgKey: key
                             }
                         }
                     },
@@ -80,7 +82,8 @@ module.exports = (app) => {
                             name: req.body.name,
                             birthdate: req.body.birthdate,
                             description: req.body.description,
-                            imgFile: ""
+                            imgFile: "",
+                            imgKey: null
                         }
                     }
                 },
@@ -109,6 +112,18 @@ module.exports = (app) => {
 
     app.delete(`/api/users/:username/pets/:id`, checkJwt, async (req, res) => {
         const { username, id } = req.params;
+        const key = req.body.imgKey;
+
+        if (key) {
+            const params = {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: key
+            }
+
+            s3.deleteObject(params, (err, data) => {
+                if (err) console.log(err, err.stack);
+            });
+        }
 
         const user = await User.updateOne(
             { username: username },
@@ -118,6 +133,5 @@ module.exports = (app) => {
             error: false,
             user
         })
-
     })
 }
