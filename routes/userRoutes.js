@@ -3,11 +3,22 @@ const User = mongoose.model('users');
 const cors = require('cors')
 const http = require("http");
 const { checkJwt } = require("../authz/check-jwt");
+const aws = require("aws-sdk");
+const multer = require('multer');
 
+const storage = multer.memoryStorage();
+
+const upload = multer({ storage: storage });
 
 const corsOptions = {
     origin: 'http://localhost:3000'
 }
+
+const s3 = new aws.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION
+});
 
 module.exports = (app) => {
     const server = http.createServer(app);
@@ -26,12 +37,33 @@ module.exports = (app) => {
     });
 
     // Add a pet to the user
-    app.post(`/api/users/:username/pets`, checkJwt, async (req, res) => {
+    app.post(`/api/users/:username/pets`, checkJwt, upload.single('imgFile'), async (req, res) => {
         const { username } = req.params;
+        const imgFile = req.file;
+        console.log(imgFile);
+
+        const params = {
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: "images/" + imgFile.originalname,
+            Body: imgFile.buffer,
+            ContentType: imgFile.mimetype,
+            ACL: "public-read"
+        };
+
+        s3.upload(params, (err, data) => console.log(err, data));
 
         const user = await User.updateOne(
             { username: username },
-            { $push: { pets: req.body } },
+            {
+                $push: {
+                    pets: {
+                        name: req.body.name,
+                        birthdate: req.body.birthdate,
+                        description: req.body.description,
+                        imgFile: ""
+                    }
+                }
+            },
             { upsert: true });
 
         return res.status(201).send({
