@@ -39,17 +39,39 @@ module.exports = (app) => {
     app.post(`/api/users/:username/pets`, checkJwt, upload.single('imgFile'), async (req, res) => {
         const { username } = req.params;
         const imgFile = req.file;
-        const key = username + "/" + imgFile.originalname;
 
-        const params = {
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Key: key,
-            Body: imgFile.buffer,
-            ContentType: imgFile.mimetype,
-            ACL: "public-read"
-        };
+        if (imgFile) {
+            const key = username + "/" + imgFile.originalname;
 
-        s3.upload(params, async (err, data) => {
+            const params = {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: key,
+                Body: imgFile.buffer,
+                ContentType: imgFile.mimetype,
+                ACL: "public-read"
+            };
+
+            s3.upload(params, async (err, data) => {
+                const user = await User.updateOne(
+                    { username: username },
+                    {
+                        $push: {
+                            pets: {
+                                name: req.body.name,
+                                birthdate: req.body.birthdate,
+                                description: req.body.description,
+                                imgFile: data.Location
+                            }
+                        }
+                    },
+                    { upsert: true });
+
+                return res.status(201).send({
+                    error: false,
+                    user
+                })
+            });
+        } else {
             const user = await User.updateOne(
                 { username: username },
                 {
@@ -58,7 +80,7 @@ module.exports = (app) => {
                             name: req.body.name,
                             birthdate: req.body.birthdate,
                             description: req.body.description,
-                            imgFile: data.Location
+                            imgFile: ""
                         }
                     }
                 },
@@ -68,7 +90,7 @@ module.exports = (app) => {
                 error: false,
                 user
             })
-        });
+        }
     })
 
     app.put(`/api/users/:username/pets/:id`, checkJwt, async (req, res) => {
