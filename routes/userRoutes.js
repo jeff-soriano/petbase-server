@@ -7,7 +7,6 @@ const aws = require("aws-sdk");
 const multer = require('multer');
 
 const storage = multer.memoryStorage();
-
 const upload = multer({ storage: storage });
 
 const corsOptions = {
@@ -40,36 +39,36 @@ module.exports = (app) => {
     app.post(`/api/users/:username/pets`, checkJwt, upload.single('imgFile'), async (req, res) => {
         const { username } = req.params;
         const imgFile = req.file;
-        console.log(imgFile);
+        const key = username + "/" + imgFile.originalname;
 
         const params = {
             Bucket: process.env.AWS_BUCKET_NAME,
-            Key: "images/" + imgFile.originalname,
+            Key: key,
             Body: imgFile.buffer,
             ContentType: imgFile.mimetype,
             ACL: "public-read"
         };
 
-        s3.upload(params, (err, data) => console.log(err, data));
-
-        const user = await User.updateOne(
-            { username: username },
-            {
-                $push: {
-                    pets: {
-                        name: req.body.name,
-                        birthdate: req.body.birthdate,
-                        description: req.body.description,
-                        imgFile: ""
+        s3.upload(params, async (err, data) => {
+            const user = await User.updateOne(
+                { username: username },
+                {
+                    $push: {
+                        pets: {
+                            name: req.body.name,
+                            birthdate: req.body.birthdate,
+                            description: req.body.description,
+                            imgFile: data.Location
+                        }
                     }
-                }
-            },
-            { upsert: true });
+                },
+                { upsert: true });
 
-        return res.status(201).send({
-            error: false,
-            user
-        })
+            return res.status(201).send({
+                error: false,
+                user
+            })
+        });
     })
 
     app.put(`/api/users/:username/pets/:id`, checkJwt, async (req, res) => {
