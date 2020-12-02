@@ -5,19 +5,21 @@ const http = require("http");
 const { checkJwt } = require("../authz/check-jwt");
 const aws = require("aws-sdk");
 const multer = require('multer');
+const { clientOriginUrl, accessKeyId, secretAccessKey,
+    region, bucketName } = require("../config/env.dev");
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: clientOriginUrl,
     allowedHeaders: 'Authorization, Content-Type'
 }
 
 const s3 = new aws.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION
+    accessKeyId: accessKeyId,
+    secretAccessKey: secretAccessKey,
+    region: region
 });
 
 module.exports = (app) => {
@@ -45,7 +47,7 @@ module.exports = (app) => {
             const key = username + "/" + imgFile.originalname;
 
             const params = {
-                Bucket: process.env.AWS_BUCKET_NAME,
+                Bucket: bucketName,
                 Key: key,
                 Body: imgFile.buffer,
                 ContentType: imgFile.mimetype,
@@ -104,7 +106,7 @@ module.exports = (app) => {
             const key = username + "/" + imgFile.originalname;
 
             const params = {
-                Bucket: process.env.AWS_BUCKET_NAME,
+                Bucket: bucketName,
                 Key: key,
                 Body: imgFile.buffer,
                 ContentType: imgFile.mimetype,
@@ -115,7 +117,7 @@ module.exports = (app) => {
                 if (err) console.log(err, err.stack);
                 else {
                     const deleteParams = {
-                        Bucket: process.env.AWS_BUCKET_NAME,
+                        Bucket: bucketName,
                         Key: req.body.petImgKey
                     }
 
@@ -167,7 +169,7 @@ module.exports = (app) => {
 
         if (key) {
             const params = {
-                Bucket: process.env.AWS_BUCKET_NAME,
+                Bucket: bucketName,
                 Key: key
             }
 
