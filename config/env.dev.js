@@ -4,6 +4,9 @@ dotenv.config();
 
 const clientOriginUrl = process.env.CLIENT_ORIGIN_URL;
 
+/* MONGODB */
+const mongoDBUrl = process.env.MONGODB_CONNECTION_URL;
+
 /* AUTH0 */
 const audience = process.env.AUTH0_AUDIENCE;
 const domain = process.env.AUTH0_DOMAIN;
@@ -18,6 +21,12 @@ const bucketName = process.env.AWS_BUCKET_NAME;
 if (!clientOriginUrl) {
     throw new Error(
         ".env is missing the definition of a CLIENT_ORIGIN_URL environmental variable",
+    );
+}
+
+if (!mongoDBUrl) {
+    throw new Error(
+        ".env is missing the definition of a MONGODB_CONNECTION_URL environmental variable",
     );
 }
 
@@ -59,6 +68,7 @@ if (!bucketName) {
 
 module.exports = {
     clientOriginUrl,
+    mongoDBUrl,
     audience,
     domain,
     accessKeyId,
