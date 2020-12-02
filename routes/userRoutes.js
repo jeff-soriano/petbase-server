@@ -96,18 +96,69 @@ module.exports = (app) => {
         }
     })
 
-    app.put(`/api/users/:username/pets/:id`, checkJwt, async (req, res) => {
+    app.put(`/api/users/:username/pets/:id`, checkJwt, upload.single('imgFile'), async (req, res) => {
         const { username, id } = req.params;
+        const imgFile = req.file;
 
-        const user = await User.updateOne(
-            { username: username, "pets._id": id },
-            { $set: { "pets.$": req.body } });
+        if (imgFile) {
+            const key = username + "/" + imgFile.originalname;
 
-        return res.status(202).send({
-            error: false,
-            user
-        })
+            const params = {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: key,
+                Body: imgFile.buffer,
+                ContentType: imgFile.mimetype,
+                ACL: "public-read"
+            };
 
+            s3.upload(params, async (err, data) => {
+                if (err) console.log(err, err.stack);
+                else {
+                    const deleteParams = {
+                        Bucket: process.env.AWS_BUCKET_NAME,
+                        Key: req.body.petImgKey
+                    }
+
+                    s3.deleteObject(deleteParams, (err, data) => {
+                        if (err) console.log(err, err.stack);
+                    });
+
+                    const user = await User.updateOne(
+                        { username: username, "pets._id": id },
+                        {
+                            $set: {
+                                "pets.$": {
+                                    name: req.body.name,
+                                    birthdate: req.body.birthdate,
+                                    description: req.body.description,
+                                    imgFile: data.Location,
+                                    imgKey: key
+                                }
+                            }
+                        });
+
+                    return res.status(202).send({
+                        error: false,
+                        user
+                    })
+                }
+            });
+        } else {
+            const user = await User.updateOne(
+                { username: username, "pets._id": id },
+                {
+                    $set: {
+                        "pets.$.name": req.body.name,
+                        "pets.$.birthdate": req.body.birthdate,
+                        "pets.$.description": req.body.description
+                    }
+                });
+
+            return res.status(202).send({
+                error: false,
+                user
+            })
+        }
     });
 
     app.delete(`/api/users/:username/pets/:id`, checkJwt, async (req, res) => {
