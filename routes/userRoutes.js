@@ -84,7 +84,7 @@ module.exports = (app) => {
                             name: req.body.name,
                             birthdate: req.body.birthdate,
                             description: req.body.description,
-                            imgFile: "",
+                            imgFile: null,
                             imgKey: null
                         }
                     }
