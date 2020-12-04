@@ -65,11 +65,7 @@ module.exports = (app) => {
                         {
                             $push: {
                                 pets: {
-                                    name: req.body.name,
-                                    birthdate: req.body.birthdate,
-                                    gender: req.body.gender,
-                                    weight: req.body.weight,
-                                    description: req.body.description,
+                                    ...req.body,
                                     imgFile: data.Location,
                                     imgKey: key
                                 }
@@ -93,11 +89,7 @@ module.exports = (app) => {
                 {
                     $push: {
                         pets: {
-                            name: req.body.name,
-                            birthdate: req.body.birthdate,
-                            gender: req.body.gender,
-                            weight: req.body.weight,
-                            description: req.body.description,
+                            ...req.body,
                             imgFile: null,
                             imgKey: null
                         }
@@ -144,11 +136,7 @@ module.exports = (app) => {
                             {
                                 $set: {
                                     "pets.$": {
-                                        name: req.body.name,
-                                        birthdate: req.body.birthdate,
-                                        gender: req.body.gender,
-                                        weight: req.body.weight,
-                                        description: req.body.description,
+                                        ...req.body,
                                         imgFile: data.Location,
                                         imgKey: key
                                     }
