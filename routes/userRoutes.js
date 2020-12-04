@@ -59,6 +59,7 @@ module.exports = (app) => {
                 };
 
                 s3.upload(params, async (err, data) => {
+                    if (err) console.log(err, err.stack);
                     const user = await User.updateOne(
                         { username: username },
                         {
