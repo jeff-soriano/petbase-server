@@ -67,6 +67,7 @@ module.exports = (app) => {
                                 pets: {
                                     name: req.body.name,
                                     birthdate: req.body.birthdate,
+                                    gender: req.body.gender,
                                     weight: req.body.weight,
                                     description: req.body.description,
                                     imgFile: data.Location,
@@ -94,6 +95,7 @@ module.exports = (app) => {
                         pets: {
                             name: req.body.name,
                             birthdate: req.body.birthdate,
+                            gender: req.body.gender,
                             weight: req.body.weight,
                             description: req.body.description,
                             imgFile: null,
@@ -145,6 +147,7 @@ module.exports = (app) => {
                                     "pets.$": {
                                         name: req.body.name,
                                         birthdate: req.body.birthdate,
+                                        gender: req.body.gender,
                                         weight: req.body.weight,
                                         description: req.body.description,
                                         imgFile: data.Location,
@@ -172,6 +175,7 @@ module.exports = (app) => {
                     $set: {
                         "pets.$.name": req.body.name,
                         "pets.$.birthdate": req.body.birthdate,
+                        "pets.$.gender": req.body.gender,
                         "pets.$.weight": req.body.weight,
                         "pets.$.description": req.body.description
                     }
