@@ -10,6 +10,9 @@ const { clientOriginUrl, accessKeyId, secretAccessKey,
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+const allowedMimeTypes = [
+    "image/png", "image/jpg", "image/jpeg"
+];
 
 const corsOptions = {
     origin: clientOriginUrl,
@@ -44,37 +47,43 @@ module.exports = (app) => {
         const imgFile = req.file;
 
         if (imgFile) {
-            const key = username + "/" + imgFile.originalname;
+            if (allowedMimeTypes.includes(imgFile.mimetype)) {
+                const key = username + "/" + imgFile.originalname;
 
-            const params = {
-                Bucket: bucketName,
-                Key: key,
-                Body: imgFile.buffer,
-                ContentType: imgFile.mimetype,
-                ACL: "public-read"
-            };
+                const params = {
+                    Bucket: bucketName,
+                    Key: key,
+                    Body: imgFile.buffer,
+                    ContentType: imgFile.mimetype,
+                    ACL: "public-read"
+                };
 
-            s3.upload(params, async (err, data) => {
-                const user = await User.updateOne(
-                    { username: username },
-                    {
-                        $push: {
-                            pets: {
-                                name: req.body.name,
-                                birthdate: req.body.birthdate,
-                                description: req.body.description,
-                                imgFile: data.Location,
-                                imgKey: key
+                s3.upload(params, async (err, data) => {
+                    const user = await User.updateOne(
+                        { username: username },
+                        {
+                            $push: {
+                                pets: {
+                                    name: req.body.name,
+                                    birthdate: req.body.birthdate,
+                                    description: req.body.description,
+                                    imgFile: data.Location,
+                                    imgKey: key
+                                }
                             }
-                        }
-                    },
-                    { upsert: true });
+                        },
+                        { upsert: true });
 
-                return res.status(201).send({
-                    error: false,
-                    user
-                })
-            });
+                    return res.status(201).send({
+                        error: false,
+                        user
+                    })
+                });
+            } else {
+                return res.status(422).send({
+                    error: true
+                });
+            }
         } else {
             const user = await User.updateOne(
                 { username: username },
@@ -103,48 +112,55 @@ module.exports = (app) => {
         const imgFile = req.file;
 
         if (imgFile) {
-            const key = username + "/" + imgFile.originalname;
+            if (allowedMimeTypes.includes(imgFile.mimetype)) {
+                const key = username + "/" + imgFile.originalname;
 
-            const params = {
-                Bucket: bucketName,
-                Key: key,
-                Body: imgFile.buffer,
-                ContentType: imgFile.mimetype,
-                ACL: "public-read"
-            };
+                const params = {
+                    Bucket: bucketName,
+                    Key: key,
+                    Body: imgFile.buffer,
+                    ContentType: imgFile.mimetype,
+                    ACL: "public-read"
+                };
 
-            s3.upload(params, async (err, data) => {
-                if (err) console.log(err, err.stack);
-                else {
-                    const deleteParams = {
-                        Bucket: bucketName,
-                        Key: req.body.petImgKey
-                    }
+                s3.upload(params, async (err, data) => {
+                    if (err) console.log(err, err.stack);
+                    else {
+                        const deleteParams = {
+                            Bucket: bucketName,
+                            Key: req.body.petImgKey
+                        }
 
-                    s3.deleteObject(deleteParams, (err, data) => {
-                        if (err) console.log(err, err.stack);
-                    });
-
-                    const user = await User.updateOne(
-                        { username: username, "pets._id": id },
-                        {
-                            $set: {
-                                "pets.$": {
-                                    name: req.body.name,
-                                    birthdate: req.body.birthdate,
-                                    description: req.body.description,
-                                    imgFile: data.Location,
-                                    imgKey: key
-                                }
-                            }
+                        s3.deleteObject(deleteParams, (err, data) => {
+                            if (err) console.log(err, err.stack);
                         });
 
-                    return res.status(202).send({
-                        error: false,
-                        user
-                    })
-                }
-            });
+                        const user = await User.updateOne(
+                            { username: username, "pets._id": id },
+                            {
+                                $set: {
+                                    "pets.$": {
+                                        name: req.body.name,
+                                        birthdate: req.body.birthdate,
+                                        description: req.body.description,
+                                        imgFile: data.Location,
+                                        imgKey: key
+                                    }
+                                }
+                            });
+
+                        return res.status(202).send({
+                            error: false,
+                            user
+                        })
+                    }
+                });
+            }
+            else {
+                return res.status(422).send({
+                    error: true
+                });
+            }
         } else {
             const user = await User.updateOne(
                 { username: username, "pets._id": id },
