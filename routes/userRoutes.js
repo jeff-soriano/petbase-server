@@ -150,7 +150,7 @@ module.exports = (app) => {
                                 }
                             });
 
-                        return res.status(202).send({
+                        return res.status(200).send({
                             error: false,
                             user
                         })
@@ -173,7 +173,7 @@ module.exports = (app) => {
                     }
                 });
 
-            return res.status(202).send({
+            return res.status(200).send({
                 error: false,
                 user
             })
@@ -199,7 +199,7 @@ module.exports = (app) => {
             { username: username },
             { $pull: { pets: { _id: id } } });
 
-        return res.status(202).send({
+        return res.status(200).send({
             error: false,
             user
         })
