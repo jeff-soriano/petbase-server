@@ -119,7 +119,6 @@ module.exports = (app) => {
         if (imgFile) {
             if (allowedMimeTypes.includes(imgFile.mimetype)) {
                 const key = username + "/" + imgFile.originalname;
-
                 const params = {
                     Bucket: bucketName,
                     Key: key,
@@ -133,7 +132,7 @@ module.exports = (app) => {
                     else {
                         const deleteParams = {
                             Bucket: bucketName,
-                            Key: req.body.petImgKey
+                            Key: req.body.imgKey
                         }
 
                         s3.deleteObject(deleteParams, (err, data) => {
