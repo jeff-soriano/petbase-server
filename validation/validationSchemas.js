@@ -12,6 +12,17 @@ const postValidSchema = {
     }
 }
 
+const putValidSchema = {
+    username: {
+        in: ["params"],
+        isEmail: true
+    },
+    id: {
+        in: ["params"],
+        isMongoId: true
+    }
+}
+
 const petValidSchema = {
     name: {
         in: ["body"],
@@ -50,5 +61,6 @@ const petValidSchema = {
 module.exports = {
     getValidSchema,
     postValidSchema,
+    putValidSchema,
     petValidSchema
 }

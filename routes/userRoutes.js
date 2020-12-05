@@ -15,7 +15,8 @@ const allowedMimeTypes = [
     "image/png", "image/jpg", "image/jpeg"
 ];
 
-const { getValidSchema, postValidSchema, petValidSchema } = require("../validation/validationSchemas");
+const { getValidSchema, postValidSchema,
+    petValidSchema, putValidSchema } = require("../validation/validationSchemas");
 
 const corsOptions = {
     origin: clientOriginUrl,
@@ -118,79 +119,85 @@ module.exports = (app) => {
             }
         })
 
-    app.put(`/api/users/:username/pets/:id`, checkJwt, upload.single('imgFile'), async (req, res) => {
-        const { username, id } = req.params;
-        const imgFile = req.file;
+    app.put(`/api/users/:username/pets/:id`, checkJwt, upload.single('imgFile'),
+        checkSchema(putValidSchema), checkSchema(petValidSchema), async (req, res) => {
+            const { username, id } = req.params;
+            const imgFile = req.file;
 
-        if (imgFile) {
-            if (allowedMimeTypes.includes(imgFile.mimetype)) {
-                const key = username + "/" + imgFile.originalname;
-                const params = {
-                    Bucket: bucketName,
-                    Key: key,
-                    Body: imgFile.buffer,
-                    ContentType: imgFile.mimetype,
-                    ACL: "public-read"
-                };
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).send({ errors: errors.array() });
+            }
 
-                s3.upload(params, async (err, data) => {
-                    if (err) console.log(err, err.stack);
-                    else {
-                        if (req.body.imgKey.length > 0) {
-                            const deleteParams = {
-                                Bucket: bucketName,
-                                Key: req.body.imgKey
+            if (imgFile) {
+                if (allowedMimeTypes.includes(imgFile.mimetype)) {
+                    const key = username + "/" + imgFile.originalname;
+                    const params = {
+                        Bucket: bucketName,
+                        Key: key,
+                        Body: imgFile.buffer,
+                        ContentType: imgFile.mimetype,
+                        ACL: "public-read"
+                    };
+
+                    s3.upload(params, async (err, data) => {
+                        if (err) console.log(err, err.stack);
+                        else {
+                            if (req.body.imgKey.length > 0) {
+                                const deleteParams = {
+                                    Bucket: bucketName,
+                                    Key: req.body.imgKey
+                                }
+
+                                s3.deleteObject(deleteParams, (err, data) => {
+                                    if (err) console.log(err, err.stack);
+                                });
                             }
 
-                            s3.deleteObject(deleteParams, (err, data) => {
-                                if (err) console.log(err, err.stack);
-                            });
-                        }
-
-                        const user = await User.updateOne(
-                            { username: username, "pets._id": id },
-                            {
-                                $set: {
-                                    "pets.$": {
-                                        ...req.body,
-                                        imgFile: data.Location,
-                                        imgKey: key
+                            const user = await User.updateOne(
+                                { username: username, "pets._id": id },
+                                {
+                                    $set: {
+                                        "pets.$": {
+                                            ...req.body,
+                                            imgFile: data.Location,
+                                            imgKey: key
+                                        }
                                     }
-                                }
-                            });
+                                });
 
-                        return res.status(200).send({
-                            error: false,
-                            user
-                        })
-                    }
-                });
-            }
-            else {
-                return res.status(422).send({
-                    error: true
-                });
-            }
-        } else {
-            const user = await User.updateOne(
-                { username: username, "pets._id": id },
-                {
-                    $set: {
-                        "pets.$.name": req.body.name,
-                        "pets.$.birthdate": req.body.birthdate,
-                        "pets.$.gender": req.body.gender,
-                        "pets.$.species": req.body.species,
-                        "pets.$.weight": req.body.weight,
-                        "pets.$.description": req.body.description
-                    }
-                });
+                            return res.status(200).send({
+                                error: false,
+                                user
+                            })
+                        }
+                    });
+                }
+                else {
+                    return res.status(422).send({
+                        error: true
+                    });
+                }
+            } else {
+                const user = await User.updateOne(
+                    { username: username, "pets._id": id },
+                    {
+                        $set: {
+                            "pets.$.name": req.body.name,
+                            "pets.$.birthdate": req.body.birthdate,
+                            "pets.$.gender": req.body.gender,
+                            "pets.$.species": req.body.species,
+                            "pets.$.weight": req.body.weight,
+                            "pets.$.description": req.body.description
+                        }
+                    });
 
-            return res.status(200).send({
-                error: false,
-                user
-            })
-        }
-    });
+                return res.status(200).send({
+                    error: false,
+                    user
+                })
+            }
+        });
 
     app.delete(`/api/users/:username/pets/:id`, checkJwt, async (req, res) => {
         const { username, id } = req.params;
