@@ -163,6 +163,7 @@ module.exports = (app) => {
                         "pets.$.name": req.body.name,
                         "pets.$.birthdate": req.body.birthdate,
                         "pets.$.gender": req.body.gender,
+                        "pets.$.species": req.body.species,
                         "pets.$.weight": req.body.weight,
                         "pets.$.description": req.body.description
                     }

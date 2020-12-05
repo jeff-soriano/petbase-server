@@ -5,6 +5,7 @@ const petSchema = new Schema({
     name: String,
     birthdate: Date,
     gender: String,
+    species: String,
     weight: Number,
     description: String,
     imgFile: String,
