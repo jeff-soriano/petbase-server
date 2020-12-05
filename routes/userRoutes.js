@@ -89,9 +89,7 @@ module.exports = (app) => {
                 {
                     $push: {
                         pets: {
-                            ...req.body,
-                            imgFile: null,
-                            imgKey: null
+                            ...req.body
                         }
                     }
                 },
@@ -122,14 +120,16 @@ module.exports = (app) => {
                 s3.upload(params, async (err, data) => {
                     if (err) console.log(err, err.stack);
                     else {
-                        const deleteParams = {
-                            Bucket: bucketName,
-                            Key: req.body.imgKey
-                        }
+                        if (req.body.imgKey.length > 0) {
+                            const deleteParams = {
+                                Bucket: bucketName,
+                                Key: req.body.imgKey
+                            }
 
-                        s3.deleteObject(deleteParams, (err, data) => {
-                            if (err) console.log(err, err.stack);
-                        });
+                            s3.deleteObject(deleteParams, (err, data) => {
+                                if (err) console.log(err, err.stack);
+                            });
+                        }
 
                         const user = await User.updateOne(
                             { username: username, "pets._id": id },
@@ -179,7 +179,7 @@ module.exports = (app) => {
         const { username, id } = req.params;
         const key = req.body.imgKey;
 
-        if (key) {
+        if (key.length > 0) {
             const params = {
                 Bucket: bucketName,
                 Key: key
