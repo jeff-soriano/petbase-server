@@ -7,12 +7,15 @@ const aws = require("aws-sdk");
 const multer = require('multer');
 const { clientOriginUrl, accessKeyId, secretAccessKey,
     region, bucketName } = require("../config/env.dev");
+const { checkSchema, validationResult } = require('express-validator');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const allowedMimeTypes = [
     "image/png", "image/jpg", "image/jpeg"
 ];
+
+const { getValidSchema } = require("../validation/validationSchemas");
 
 const corsOptions = {
     origin: clientOriginUrl,
@@ -30,9 +33,14 @@ module.exports = (app) => {
     app.use(cors(corsOptions));
 
     // Return all pets that belong to a user
-    app.get(`/api/users/:username/pets`, checkJwt, async (req, res) => {
+    app.get(`/api/users/:username/pets`, checkJwt, checkSchema(getValidSchema), async (req, res) => {
         const { username } = req.params;
         let sendObj = null;
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).send({ errors: errors.array() });
+        }
 
         const user = await User.findOne({ username: username });
         if (user) sendObj = user.pets;
