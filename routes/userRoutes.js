@@ -15,7 +15,7 @@ const allowedMimeTypes = [
     "image/png", "image/jpg", "image/jpeg"
 ];
 
-const { getValidSchema } = require("../validation/validationSchemas");
+const { getValidSchema, postValidSchema, petValidSchema } = require("../validation/validationSchemas");
 
 const corsOptions = {
     origin: clientOriginUrl,
@@ -50,67 +50,73 @@ module.exports = (app) => {
     });
 
     // Add a pet to the user
-    app.post(`/api/users/:username/pets`, checkJwt, upload.single('imgFile'), async (req, res) => {
-        const { username } = req.params;
-        const imgFile = req.file;
+    app.post(`/api/users/:username/pets`, checkJwt, upload.single('imgFile'),
+        checkSchema(postValidSchema), checkSchema(petValidSchema), async (req, res) => {
+            const { username } = req.params;
+            const imgFile = req.file;
 
-        if (imgFile) {
-            if (allowedMimeTypes.includes(imgFile.mimetype)) {
-                const key = username + "/" + imgFile.originalname;
-
-                const params = {
-                    Bucket: bucketName,
-                    Key: key,
-                    Body: imgFile.buffer,
-                    ContentType: imgFile.mimetype,
-                    ACL: "public-read"
-                };
-
-                s3.upload(params, async (err, data) => {
-                    if (err) console.log(err, err.stack);
-                    else {
-                        const user = await User.updateOne(
-                            { username: username },
-                            {
-                                $push: {
-                                    pets: {
-                                        ...req.body,
-                                        imgFile: data.Location,
-                                        imgKey: key
-                                    }
-                                }
-                            },
-                            { upsert: true });
-
-                        return res.status(201).send({
-                            error: false,
-                            user
-                        })
-                    }
-                });
-            } else {
-                return res.status(422).send({
-                    error: true
-                });
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).send({ errors: errors.array() });
             }
-        } else {
-            const user = await User.updateOne(
-                { username: username },
-                {
-                    $push: {
-                        pets: {
-                            ...req.body
-                        }
-                    }
-                },
-                { upsert: true });
 
-            return res.status(201).send({
-                error: false,
-                user
-            })
-        }
-    })
+            if (imgFile) {
+                if (allowedMimeTypes.includes(imgFile.mimetype)) {
+                    const key = username + "/" + imgFile.originalname;
+
+                    const params = {
+                        Bucket: bucketName,
+                        Key: key,
+                        Body: imgFile.buffer,
+                        ContentType: imgFile.mimetype,
+                        ACL: "public-read"
+                    };
+
+                    s3.upload(params, async (err, data) => {
+                        if (err) console.log(err, err.stack);
+                        else {
+                            const user = await User.updateOne(
+                                { username: username },
+                                {
+                                    $push: {
+                                        pets: {
+                                            ...req.body,
+                                            imgFile: data.Location,
+                                            imgKey: key
+                                        }
+                                    }
+                                },
+                                { upsert: true });
+
+                            return res.status(201).send({
+                                error: false,
+                                user
+                            })
+                        }
+                    });
+                } else {
+                    return res.status(422).send({
+                        error: true
+                    });
+                }
+            } else {
+                const user = await User.updateOne(
+                    { username: username },
+                    {
+                        $push: {
+                            pets: {
+                                ...req.body
+                            }
+                        }
+                    },
+                    { upsert: true });
+
+                return res.status(201).send({
+                    error: false,
+                    user
+                })
+            }
+        })
 
     app.put(`/api/users/:username/pets/:id`, checkJwt, upload.single('imgFile'), async (req, res) => {
         const { username, id } = req.params;
