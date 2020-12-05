@@ -60,23 +60,25 @@ module.exports = (app) => {
 
                 s3.upload(params, async (err, data) => {
                     if (err) console.log(err, err.stack);
-                    const user = await User.updateOne(
-                        { username: username },
-                        {
-                            $push: {
-                                pets: {
-                                    ...req.body,
-                                    imgFile: data.Location,
-                                    imgKey: key
+                    else {
+                        const user = await User.updateOne(
+                            { username: username },
+                            {
+                                $push: {
+                                    pets: {
+                                        ...req.body,
+                                        imgFile: data.Location,
+                                        imgKey: key
+                                    }
                                 }
-                            }
-                        },
-                        { upsert: true });
+                            },
+                            { upsert: true });
 
-                    return res.status(201).send({
-                        error: false,
-                        user
-                    })
+                        return res.status(201).send({
+                            error: false,
+                            user
+                        })
+                    }
                 });
             } else {
                 return res.status(422).send({
