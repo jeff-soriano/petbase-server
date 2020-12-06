@@ -74,7 +74,12 @@ module.exports = (app) => {
                     };
 
                     s3.upload(params, async (err, data) => {
-                        if (err) console.log(err, err.stack);
+                        if (err) {
+                            console.log(err, err.stack);
+                            return res.status(422).send({
+                                error: "AWS S3 Upload failed"
+                            });
+                        }
                         else {
                             const user = await User.updateOne(
                                 { username: username },
@@ -97,7 +102,7 @@ module.exports = (app) => {
                     });
                 } else {
                     return res.status(422).send({
-                        error: true
+                        error: "Invalid file type"
                     });
                 }
             } else {
@@ -115,9 +120,9 @@ module.exports = (app) => {
                 return res.status(201).send({
                     error: false,
                     user
-                })
+                });
             }
-        })
+        });
 
     app.put(`/api/users/:username/pets/:id`, checkJwt, upload.single('imgFile'),
         checkSchema(putValidSchema), checkSchema(petValidSchema), async (req, res) => {
@@ -141,7 +146,12 @@ module.exports = (app) => {
                     };
 
                     s3.upload(params, async (err, data) => {
-                        if (err) console.log(err, err.stack);
+                        if (err) {
+                            console.log(err, err.stack);
+                            return res.status(422).send({
+                                error: "AWS S3 Upload failed"
+                            });
+                        }
                         else {
                             if (req.body.imgKey.length > 0) {
                                 const deleteParams = {
@@ -150,7 +160,12 @@ module.exports = (app) => {
                                 }
 
                                 s3.deleteObject(deleteParams, (err, data) => {
-                                    if (err) console.log(err, err.stack);
+                                    if (err) {
+                                        console.log(err, err.stack);
+                                        return res.status(422).send({
+                                            error: "AWS S3 Delete old file failed"
+                                        });
+                                    }
                                 });
                             }
 
@@ -175,7 +190,7 @@ module.exports = (app) => {
                 }
                 else {
                     return res.status(422).send({
-                        error: true
+                        error: "Invalid file type"
                     });
                 }
             } else {
@@ -195,7 +210,7 @@ module.exports = (app) => {
                 return res.status(200).send({
                     error: false,
                     user
-                })
+                });
             }
         });
 
@@ -216,7 +231,12 @@ module.exports = (app) => {
                 }
 
                 s3.deleteObject(params, (err, data) => {
-                    if (err) console.log(err, err.stack);
+                    if (err) {
+                        console.log(err, err.stack);
+                        return res.status(422).send({
+                            error: "AWS S3 Delete failed"
+                        });
+                    }
                 });
             }
 
@@ -227,6 +247,6 @@ module.exports = (app) => {
             return res.status(200).send({
                 error: false,
                 user
-            })
-        })
+            });
+        });
 }
