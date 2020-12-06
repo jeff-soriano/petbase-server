@@ -23,6 +23,17 @@ const putValidSchema = {
     }
 }
 
+const deleteValidSchema = {
+    username: {
+        in: ["params"],
+        isEmail: true
+    },
+    id: {
+        in: ["params"],
+        isMongoId: true
+    }
+}
+
 const petValidSchema = {
     name: {
         in: ["body"],
@@ -62,5 +73,6 @@ module.exports = {
     getValidSchema,
     postValidSchema,
     putValidSchema,
+    deleteValidSchema,
     petValidSchema
 }

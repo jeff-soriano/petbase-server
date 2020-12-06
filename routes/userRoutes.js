@@ -16,7 +16,7 @@ const allowedMimeTypes = [
 ];
 
 const { getValidSchema, postValidSchema,
-    petValidSchema, putValidSchema } = require("../validation/validationSchemas");
+    petValidSchema, putValidSchema, deleteValidSchema } = require("../validation/validationSchemas");
 
 const corsOptions = {
     origin: clientOriginUrl,
@@ -199,28 +199,34 @@ module.exports = (app) => {
             }
         });
 
-    app.delete(`/api/users/:username/pets/:id`, checkJwt, async (req, res) => {
-        const { username, id } = req.params;
-        const key = req.body.imgKey;
+    app.delete(`/api/users/:username/pets/:id`, checkJwt, checkSchema(deleteValidSchema),
+        async (req, res) => {
+            const { username, id } = req.params;
+            const key = req.body.imgKey;
 
-        if (key.length > 0) {
-            const params = {
-                Bucket: bucketName,
-                Key: key
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).send({ errors: errors.array() });
             }
 
-            s3.deleteObject(params, (err, data) => {
-                if (err) console.log(err, err.stack);
-            });
-        }
+            if (key.length > 0) {
+                const params = {
+                    Bucket: bucketName,
+                    Key: key
+                }
 
-        const user = await User.updateOne(
-            { username: username },
-            { $pull: { pets: { _id: id } } });
+                s3.deleteObject(params, (err, data) => {
+                    if (err) console.log(err, err.stack);
+                });
+            }
 
-        return res.status(200).send({
-            error: false,
-            user
+            const user = await User.updateOne(
+                { username: username },
+                { $pull: { pets: { _id: id } } });
+
+            return res.status(200).send({
+                error: false,
+                user
+            })
         })
-    })
 }
